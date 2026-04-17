@@ -3,9 +3,6 @@
   publish = "dist"
 
 [build.environment]
-  # Match .nvmrc — Netlify was using Node 22 otherwise; avoids long/broken npm installs.
+  # Node version for the whole build (install + compile). Also see .nvmrc.
   NODE_VERSION = "20"
-  # Install devDependencies (vite, @vitejs/plugin-react, typescript types, …) — needed for `vite build`.
-  NPM_CONFIG_PRODUCTION = "false"
-  NPM_CONFIG_AUDIT = "false"
-  NPM_CONFIG_FUND = "false"
+  # Install-time npm flags are set in .npmrc (production=false, audit, fund) so they apply to `npm install`.
