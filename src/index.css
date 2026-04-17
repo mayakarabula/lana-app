@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Nunito:wght@400;600;700&display=swap');
+
+:root {
+  --font-body: 'Nunito', system-ui, sans-serif;
+  --font-display: 'DM Sans', var(--font-body);
+
+  --bg-top: #f5f0ff;
+  --bg-bottom: #ede9fe;
+  --surface-1: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(250, 245, 255, 0.95);
+
+  --lavender: #c4b5fd;
+  --lavender-deep: #7c3aed;
+  --accent-pink: #f0abfc;
+  --accent-mint: #99f6e4;
+  --accent-mint-dark: #0d9488;
+
+  --text: #3b2f5c;
+  --text-soft: #5b5270;
+  --text-muted: #8b819f;
+
+  --border: rgba(167, 139, 250, 0.25);
+  --border-strong: rgba(124, 58, 237, 0.35);
+
+  font-family: var(--font-body);
+  line-height: 1.55;
+  font-weight: 400;
+  color: var(--text);
+  background-color: var(--bg-bottom);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(165deg, var(--bg-top) 0%, var(--bg-bottom) 45%, #e9d5ff 100%);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--lavender-deep);
+  outline-offset: 2px;
+}
