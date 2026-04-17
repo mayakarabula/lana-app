@@ -5,7 +5,7 @@
 [build.environment]
   # Match .nvmrc — Netlify was using Node 22 otherwise; avoids long/broken npm installs.
   NODE_VERSION = "20"
-  # Install devDependencies (typescript, vite, eslint, …) — otherwise `tsc: not found` on build.
+  # Install devDependencies (vite, @vitejs/plugin-react, typescript types, …) — needed for `vite build`.
   NPM_CONFIG_PRODUCTION = "false"
   NPM_CONFIG_AUDIT = "false"
   NPM_CONFIG_FUND = "false"
