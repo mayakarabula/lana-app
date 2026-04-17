@@ -6,6 +6,8 @@ import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from '../lib/fir
 
 const STORAGE_KEY = 'lana-web-dev-progress'
 const PROGRESS_COLLECTION = 'progress'
+/** Single shared progress doc (not per user). Change to match `firestore.rules`. */
+const SHARED_PROGRESS_DOC_ID = 'lana'
 
 const validIds = new Set(allTopicIds())
 
@@ -39,7 +41,7 @@ function save(ids: Set<string>): boolean {
 export function useProgress() {
   const useCloud = isFirebaseConfigured()
   const [done, setDone] = useState<Set<string>>(() => load())
-  const [userId, setUserId] = useState<string | null>(null)
+  const [authReady, setAuthReady] = useState(false)
   /** Firestore snapshot applied at least once — avoids writing empty state before hydrate (wipes server). */
   const [cloudReady, setCloudReady] = useState(() => !isFirebaseConfigured())
   const skipWriteRef = useRef(false)
@@ -76,7 +78,7 @@ export function useProgress() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       unsubscribeSnapshot?.()
       unsubscribeSnapshot = undefined
-      setUserId(user?.uid ?? null)
+      setAuthReady(!!user)
 
       if (!user) {
         void signInAnonymously(auth).catch((err) => {
@@ -85,7 +87,7 @@ export function useProgress() {
         return
       }
 
-      const docRef = doc(db, PROGRESS_COLLECTION, user.uid)
+      const docRef = doc(db, PROGRESS_COLLECTION, SHARED_PROGRESS_DOC_ID)
 
       unsubscribeSnapshot = onSnapshot(
         docRef,
@@ -131,16 +133,16 @@ export function useProgress() {
 
   /** Push local state to Firestore when it changes (not when applying remote snapshot). */
   useEffect(() => {
-    if (!useCloud || !userId || !cloudReady) return
+    if (!useCloud || !authReady || !cloudReady) return
     if (skipWriteRef.current) return
 
     const db = getFirebaseDb()
-    const docRef = doc(db, PROGRESS_COLLECTION, userId)
+    const docRef = doc(db, PROGRESS_COLLECTION, SHARED_PROGRESS_DOC_ID)
     void setDoc(docRef, {
       completed: [...done].filter((id) => validIds.has(id)),
       updatedAt: serverTimestamp(),
     })
-  }, [done, useCloud, userId, cloudReady])
+  }, [done, useCloud, authReady, cloudReady])
 
   const toggle = useCallback((id: string) => {
     if (!validIds.has(id)) return

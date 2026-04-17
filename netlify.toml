@@ -1,8 +1,7 @@
 [build]
-  command = "npm install --include=dev && npm run build"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
   # Node version for the whole build (install + compile). Also see .nvmrc.
   NODE_VERSION = "20"
-  # Install-time npm flags are set in .npmrc (production=false, audit, fund) so they apply to `npm install`.
