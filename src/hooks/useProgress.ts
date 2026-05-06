@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
-import { allTopicIds } from '../data/curriculum'
+import { allProgressIds } from '../data/curriculum'
 import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from '../lib/firebase'
 
 const STORAGE_KEY = 'lana-web-dev-progress'
@@ -9,7 +9,7 @@ const PROGRESS_COLLECTION = 'progress'
 /** Single shared progress doc (not per user). Change to match `firestore.rules`. */
 const SHARED_PROGRESS_DOC_ID = 'lana'
 
-const validIds = new Set(allTopicIds())
+const validIds = new Set(allProgressIds())
 
 function parseStored(raw: string | null): Set<string> {
   if (!raw) return new Set()

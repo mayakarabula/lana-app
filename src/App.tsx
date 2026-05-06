@@ -1,14 +1,27 @@
 import { LavenderFlowers } from './components/LavenderFlowers'
-import { curriculum, sortTopicTags, TAG_LABELS, totalTopicCount } from './data/curriculum'
+import {
+  curriculum,
+  linkProgressId,
+  sortTopicTags,
+  TAG_LABELS,
+  totalChecklistCount,
+} from './data/curriculum'
 import { useProgress } from './hooks/useProgress'
 import { celebrateTopicDone } from './lib/confetti'
 import './App.css'
 
 function App() {
   const { done, toggle, usingFirebase } = useProgress()
-  const total = totalTopicCount()
+  const total = totalChecklistCount()
   const completed = [...done].filter((id) =>
-    curriculum.some((s) => s.topics.some((t) => t.id === id)),
+    curriculum.some((section) =>
+      section.topics.some((topic) =>
+        topic.links.some((link) => linkProgressId(topic.id, link.href) === id) ||
+        topic.subTopics?.some((subTopic) =>
+          subTopic.links.some((link) => linkProgressId(subTopic.id, link.href) === id),
+        ),
+      ),
+    ),
   ).length
   const pct = total === 0 ? 0 : Math.round((completed / total) * 100)
 
@@ -28,7 +41,7 @@ function App() {
         </div>
         <div className="xp-meta">
           <span className="xp-label">
-            Progress: <strong>{completed}</strong> / {total} topics
+            Progress: <strong>{completed}</strong> / {total} items
           </span>
           <span className="xp-pct">{pct}%</span>
         </div>
@@ -36,8 +49,25 @@ function App() {
 
       <main className="sections">
         {curriculum.map((section) => {
-          const sectionTotal = section.topics.length
-          const sectionDone = section.topics.filter((t) => done.has(t.id)).length
+          const sectionTotal = section.topics.reduce(
+            (sum, topic) =>
+              sum +
+              topic.links.length +
+              (topic.subTopics?.reduce((subSum, subTopic) => subSum + subTopic.links.length, 0) ?? 0),
+            0,
+          )
+          const sectionDone = section.topics.reduce(
+            (sum, topic) =>
+              sum +
+              topic.links.filter((link) => done.has(linkProgressId(topic.id, link.href))).length +
+              (topic.subTopics?.reduce(
+                (subSum, subTopic) =>
+                  subSum +
+                  subTopic.links.filter((link) => done.has(linkProgressId(subTopic.id, link.href))).length,
+                0,
+              ) ?? 0),
+            0,
+          )
           const sectionPct = sectionTotal === 0 ? 0 : Math.round((sectionDone / sectionTotal) * 100)
 
           return (
@@ -63,30 +93,21 @@ function App() {
 
               <ul className="topic-list">
                 {section.topics.map((topic) => {
-                  const checked = done.has(topic.id)
+                  const topicLinkIds = [
+                    ...topic.links.map((link) => linkProgressId(topic.id, link.href)),
+                    ...(topic.subTopics?.flatMap((subTopic) =>
+                      subTopic.links.map((link) => linkProgressId(subTopic.id, link.href)),
+                    ) ?? []),
+                  ]
+                  const checked = topicLinkIds.length > 0 && topicLinkIds.every((id) => done.has(id))
                   return (
                     <li key={topic.id} className={`topic ${checked ? 'topic-done' : ''}`}>
-                      <label className="topic-label">
-                        <input
-                          type="checkbox"
-                          className="topic-check"
-                          checked={checked}
-                          onChange={() => {
-                            if (!checked) {
-                              const completesSection =
-                                sectionDone + 1 === sectionTotal && sectionTotal > 0
-                              celebrateTopicDone(completesSection)
-                            }
-                            toggle(topic.id)
-                          }}
-                        />
-                        <span className="topic-title-wrap">
-                          <span className="topic-title">{topic.title}</span>
-                          {topic.note ? (
-                            <span className="topic-note">{topic.note}</span>
-                          ) : null}
-                        </span>
-                      </label>
+                      <div className="topic-title-wrap">
+                        <span className="topic-title">{topic.title}</span>
+                        {topic.note ? (
+                          <span className="topic-note">{topic.note}</span>
+                        ) : null}
+                      </div>
                       <div className="topic-tags" aria-label="Topic tags">
                         {sortTopicTags(topic.tags).map((tag) => (
                           <span key={tag} className={`topic-tag topic-tag--${tag}`}>
@@ -96,17 +117,81 @@ function App() {
                       </div>
                       <div className="topic-links">
                         {topic.links.map((link) => (
-                          <a
-                            key={link.href}
-                            href={link.href}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="resource-link"
-                          >
-                            {link.label}
-                          </a>
+                          <div key={link.href} className="resource-item">
+                            <input
+                              type="checkbox"
+                              className="topic-check topic-check--link"
+                              checked={done.has(linkProgressId(topic.id, link.href))}
+                              onChange={() => {
+                                const id = linkProgressId(topic.id, link.href)
+                                if (!done.has(id)) {
+                                  const completesSection =
+                                    sectionDone + 1 === sectionTotal && sectionTotal > 0
+                                  celebrateTopicDone(completesSection)
+                                }
+                                toggle(id)
+                              }}
+                            />
+                            <a
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className={`resource-link ${done.has(linkProgressId(topic.id, link.href)) ? 'resource-link--done' : ''}`}
+                            >
+                              {link.label}
+                            </a>
+                          </div>
                         ))}
                       </div>
+                      {topic.subTopics?.length ? (
+                        <ul className="topic-subtopics">
+                          {topic.subTopics.map((sub) => (
+                            <li key={sub.id} className="topic-subtopic">
+                              <details className="topic-subtopic-accordion">
+                                <summary className="topic-subtopic-summary">
+                                  <span className="topic-subtopic-title">{sub.title}</span>
+                                  <span className="topic-subtopic-progress">
+                                    {
+                                      sub.links.filter((link) =>
+                                        done.has(linkProgressId(sub.id, link.href)),
+                                      ).length
+                                    }
+                                    /{sub.links.length}
+                                  </span>
+                                </summary>
+                                <div className="topic-subtopic-links">
+                                  {sub.links.map((link) => (
+                                    <div key={link.href} className="resource-item">
+                                      <input
+                                        type="checkbox"
+                                        className="topic-check topic-check--link"
+                                        checked={done.has(linkProgressId(sub.id, link.href))}
+                                        onChange={() => {
+                                          const id = linkProgressId(sub.id, link.href)
+                                          if (!done.has(id)) {
+                                            const completesSection =
+                                              sectionDone + 1 === sectionTotal && sectionTotal > 0
+                                            celebrateTopicDone(completesSection)
+                                          }
+                                          toggle(id)
+                                        }}
+                                      />
+                                      <a
+                                        href={link.href}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        className={`resource-link resource-link--sub ${done.has(linkProgressId(sub.id, link.href)) ? 'resource-link--done' : ''}`}
+                                      >
+                                        {link.label}
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </li>
                   )
                 })}
